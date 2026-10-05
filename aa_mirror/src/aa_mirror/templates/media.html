@@ -1,26 +1,46 @@
 {% extends "base.html" %}
+{% block title %}{{ category | replace('-', ' ') | title }} · {{ app_name }}{% endblock %}
 {% block content %}
-<h1>{{ category }} leaderboard</h1>
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Media arena</div>
+    <h1>{{ category | replace('-', ' ') | title }} Leaderboard</h1>
+    {% if run %}<p>ELO from blind preference votes · {{ rows | length }} models · snapshot #{{ run.id }}, <time data-utc="{{ run.started_at }}">{{ run.started_at }}</time></p>{% endif %}
+  </div>
+</div>
 {% if not run %}
-  <p>No {{ category }} data in any snapshot yet.</p>
+  <div class="card"><p>No {{ category }} data in any snapshot yet.</p></div>
 {% else %}
-<p class="muted">Snapshot #{{ run.id }} taken {{ run.started_at }} UTC · {{ rows | length }} models. Source: Artificial Analysis (artificialanalysis.ai).</p>
-<form class="controls" onsubmit="return false"><label>Filter <input type="search" id="filter-text" placeholder="model or creator"></label><span class="muted" id="row-count"></span></form>
-<table class="sortable" id="leaderboard">
-  <thead><tr><th data-type="num">Rank</th><th data-type="text">Model</th><th data-type="text">Creator</th><th data-type="num">ELO</th><th data-type="text">95% CI</th><th data-type="num">Appearances</th><th data-type="text">Released</th></tr></thead>
-  <tbody>
-  {% for r in rows %}
-    <tr data-creator="{{ r.creator_name or '' }}">
-      <td data-v="{{ r.rank if r.rank is not none else '' }}">{{ r.rank | fmt }}</td>
-      <td data-v="{{ r.name or r.model_id }}">{{ r.name or r.model_id }}</td>
-      <td data-v="{{ r.creator_name or '' }}">{{ r.creator_name or '–' }}</td>
-      <td data-v="{{ r.elo if r.elo is not none else '' }}">{{ r.elo | fmt(0) }}</td>
-      <td data-v="{{ r.ci95 or '' }}">{{ r.ci95 or '–' }}</td>
-      <td data-v="{{ r.appearances if r.appearances is not none else '' }}">{{ r.appearances | fmt }}</td>
-      <td data-v="{{ r.release_date or '' }}">{{ r.release_date or '–' }}</td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
+<section class="card">
+  <div class="card-head"><h2>Top 25 by ELO</h2></div>
+  <p class="card-sub">Higher is better. Axis does not start at zero.</p>
+  <div class="chart-box"><canvas id="chart-elo"></canvas></div>
+</section>
+<script type="application/json" id="media-data">{{ chart_json | safe }}</script>
+
+<section>
+  <div class="toolbar" style="position:static;margin-top:20px">
+    <input type="search" id="filter-text" placeholder="Search model or creator">
+    <span class="count" id="row-count"></span>
+  </div>
+  <div class="table-wrap">
+  <table class="sortable" id="leaderboard">
+    <thead><tr><th data-type="num" class="n">Rank</th><th data-type="text">Model</th><th data-type="text">Creator</th><th data-type="num" class="n">ELO</th><th data-type="text" class="n">95% CI</th><th data-type="num" class="n">Appearances</th><th data-type="text">Released</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr data-creator="{{ r.creator_name or '' }}">
+        <td class="n rank" data-v="{{ r.rank if r.rank is not none else '' }}">{{ r.rank | fmt }}</td>
+        <td class="model" data-v="{{ r.name or r.model_id }}"><span class="swatch" data-swatch="{{ r.creator_name or '' }}"></span>{{ r.name or r.model_id }}</td>
+        <td data-v="{{ r.creator_name or '' }}">{{ r.creator_name or '–' }}</td>
+        <td class="n" data-v="{{ r.elo if r.elo is not none else '' }}"><b>{{ r.elo | fmt(0) }}</b></td>
+        <td class="n muted" data-v="{{ r.ci95 or '' }}">{{ r.ci95 or '–' }}</td>
+        <td class="n" data-v="{{ r.appearances if r.appearances is not none else '' }}">{{ '{:,}'.format(r.appearances) if r.appearances is not none else '–' }}</td>
+        <td data-v="{{ r.release_date or '' }}">{{ r.release_date or '–' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
 {% endif %}
 {% endblock %}

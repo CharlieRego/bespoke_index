@@ -17,6 +17,10 @@ from .smoke import missing_key_message
 
 HERE = Path(__file__).parent
 Runner = Callable[[Settings, int], None]
+CHART_FIELDS = (
+    "model_id", "name", "creator_name", "release_date", "intelligence_index", "coding_index", "math_index",
+    "price_blended", "price_input", "price_output", "output_tps", "ttft_s", "ttfa_s",
+)
 
 
 def _thread_runner(settings: Settings, run_id: int) -> None:
@@ -41,6 +45,12 @@ def fmt(v, digits: int = 1) -> str:
     return str(v)
 
 
+def money(v) -> str:
+    if not v:
+        return "–"
+    return f"${v:,.2f}" if v >= 0.1 else f"${v:,.3f}"
+
+
 def create_app(settings: Settings | None = None, runner: Runner | None = None) -> FastAPI:
     settings = settings or load_settings()
     app = FastAPI(title=APP_NAME, docs_url=None, redoc_url=None, openapi_url=None)
@@ -48,6 +58,7 @@ def create_app(settings: Settings | None = None, runner: Runner | None = None) -
     app.state.runner = runner or _thread_runner
     templates = Jinja2Templates(directory=HERE / "templates")
     templates.env.filters["fmt"] = fmt
+    templates.env.filters["money"] = money
     templates.env.globals.update(app_name=APP_NAME, media_categories=MEDIA_CATEGORIES)
     app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
 
@@ -94,7 +105,7 @@ def create_app(settings: Settings | None = None, runner: Runner | None = None) -
             snap = next((s for s in snaps if s["id"] == run), None) if run else (snaps[0] if snaps else None)
             models = queries.llm_models(c, snap["id"]) if snap else []
         chart = [
-            {k: m[k] for k in ("model_id", "name", "creator_name", "intelligence_index", "price_blended", "output_tps", "ttft_s")}
+            {k: m[k] for k in CHART_FIELDS}
             for m in models
         ]
         creators = sorted({m["creator_name"] for m in models if m["creator_name"]})
@@ -111,11 +122,15 @@ def create_app(settings: Settings | None = None, runner: Runner | None = None) -
             raise HTTPException(404, "model not found in any snapshot")
         latest = history[-1]
         series = [
-            {k: h[k] for k in ("started_at", "intelligence_index", "price_blended", "output_tps", "ttft_s")}
+            {k: h[k] for k in ("started_at", "intelligence_index", "price_blended", "output_tps", "ttft_s", "ttfa_s")}
             for h in history
         ]
+        evals = sorted(
+            ({"k": k, "v": v * 100 if v is not None and v <= 1 else v} for k, v in latest["evaluations"].items()),
+            key=lambda e: -(e["v"] or 0),
+        )
         return render(request, "model.html", {
-            "m": latest, "history": history, "series_json": script_json(series),
+            "m": latest, "history": history, "series_json": script_json(series), "eval_json": script_json(evals),
         })
 
     @app.get("/compare")
@@ -139,7 +154,10 @@ def create_app(settings: Settings | None = None, runner: Runner | None = None) -
             raise HTTPException(404)
         with conn() as c:
             run, rows = queries.media_snapshot(c, category)
-        return render(request, "media.html", {"category": category, "run": run, "rows": rows})
+        chart = [{k: r[k] for k in ("model_id", "name", "creator_name", "elo", "rank")} for r in rows]
+        return render(request, "media.html", {
+            "category": category, "run": run, "rows": rows, "chart_json": script_json(chart),
+        })
 
     @app.get("/runs")
     def runs(request: Request):

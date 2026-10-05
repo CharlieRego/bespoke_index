@@ -1,54 +1,117 @@
 {% extends "base.html" %}
+{% block title %}LLM Leaderboard · {{ app_name }}{% endblock %}
 {% block content %}
-<h1>LLM leaderboard</h1>
-{% if not snap %}
-  <p>No snapshots yet. Click <em>Refresh now</em> or run <code>uv run aa-mirror refresh</code>.</p>
-{% else %}
-<form class="controls" method="get">
-  <label>Snapshot
-    <select name="run" onchange="this.form.submit()">
-      {% for s in snaps %}<option value="{{ s.id }}" {% if s.id == snap.id %}selected{% endif %}>#{{ s.id }} · {{ s.started_at }} · {{ s.n }} models</option>{% endfor %}
-    </select>
-  </label>
-  <label>Filter <input type="search" id="filter-text" placeholder="model or creator"></label>
-  <label>Creator
-    <select id="filter-creator"><option value="">all</option>{% for c in creators %}<option>{{ c }}</option>{% endfor %}</select>
-  </label>
-  <label><input type="checkbox" id="filter-indexed"> only with Intelligence Index</label>
-  <span class="muted" id="row-count"></span>
-</form>
-
-<div class="charts">
-  <figure><figcaption>Intelligence Index vs blended price (USD / 1M tokens, log scale)</figcaption><canvas id="chart-price"></canvas></figure>
-  <figure><figcaption>Top 25 by median output speed (tokens/s)</figcaption><canvas id="chart-speed"></canvas></figure>
-  <figure><figcaption>Intelligence Index vs median output speed</figcaption><canvas id="chart-iq-speed"></canvas></figure>
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Language models</div>
+    <h1>LLM Leaderboard</h1>
+    <p>Intelligence, price, speed and latency across {{ models | length }} models{% if snap %} · snapshot #{{ snap.id }}, <time data-utc="{{ snap.started_at }}">{{ snap.started_at }}</time>{% endif %}</p>
+  </div>
+  {% if snaps %}
+  <form method="get">
+    <label class="inline">Snapshot
+      <select name="run" onchange="this.form.submit()">
+        {% for s in snaps %}<option value="{{ s.id }}" {% if s.id == snap.id %}selected{% endif %}>#{{ s.id }} · {{ s.started_at[:16] | replace('T', ' ') }} UTC · {{ s.n }} models</option>{% endfor %}
+      </select>
+    </label>
+  </form>
+  {% endif %}
 </div>
-<p class="muted">Snapshot #{{ snap.id }} taken {{ snap.started_at }} UTC. Source: Artificial Analysis (artificialanalysis.ai).</p>
+
+{% if not snap %}
+  <div class="card"><p>No snapshots yet. Click <em>Refresh now</em> or run <code>uv run aa-mirror refresh</code>.</p></div>
+{% else %}
+<div class="toolbar">
+  <div class="seg" id="preset" role="group" aria-label="Model selection">
+    <button type="button" data-preset="frontier" aria-pressed="true">Frontier</button>
+    <button type="button" data-preset="top">Top 30</button>
+    <button type="button" data-preset="new">Released last 90 days</button>
+    <button type="button" data-preset="all">All</button>
+  </div>
+  <input type="search" id="filter-text" placeholder="Search model or creator">
+  <select id="filter-creator" aria-label="Creator"><option value="">All creators</option>{% for c in creators %}<option>{{ c }}</option>{% endfor %}</select>
+  <label class="inline"><input type="checkbox" id="filter-indexed" checked> Has Intelligence Index</label>
+  <span class="count" id="row-count"></span>
+</div>
+
+<div class="grid grid-3" id="highlights">
+  <div class="card highlight"><h3>Highest intelligence</h3><div data-hl="intelligence_index"></div></div>
+  <div class="card highlight"><h3>Fastest output speed</h3><div data-hl="output_tps"></div></div>
+  <div class="card highlight"><h3>Lowest blended price</h3><div data-hl="price_blended"></div></div>
+</div>
+
+<section class="card">
+  <div class="card-head"><h2>Artificial Analysis Intelligence Index</h2><span class="muted" data-shown></span></div>
+  <p class="card-sub">Composite of the evaluations AA runs; higher is better.</p>
+  <div class="chart-box tall"><canvas id="chart-iq"></canvas></div>
+</section>
+
+<div class="grid grid-2" style="margin-top:20px">
+  <section class="card">
+    <div class="card-head"><h2>Intelligence vs. Price</h2></div>
+    <p class="card-sub">Blended USD per 1M tokens (3:1 input:output), log scale. Shaded: most attractive quadrant (above-median intelligence, below-median price).</p>
+    <div class="chart-box mid"><canvas id="chart-iq-price"></canvas></div>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Intelligence vs. Output Speed</h2></div>
+    <p class="card-sub">Median output tokens per second. Shaded: most attractive quadrant (above-median intelligence and speed).</p>
+    <div class="chart-box mid"><canvas id="chart-iq-speed"></canvas></div>
+  </section>
+</div>
+
+<div class="grid grid-3">
+  <section class="card">
+    <div class="card-head"><h2>Output Speed</h2></div>
+    <p class="card-sub">Output tokens per second; higher is better.</p>
+    <div class="chart-box" data-autoheight><canvas id="chart-speed"></canvas></div>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Price</h2></div>
+    <p class="card-sub">Blended USD per 1M tokens; lower is better.</p>
+    <div class="chart-box" data-autoheight><canvas id="chart-price"></canvas></div>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Latency</h2></div>
+    <p class="card-sub">Seconds to first answer token; lower is better.</p>
+    <div class="chart-box" data-autoheight><canvas id="chart-latency"></canvas></div>
+  </section>
+</div>
+<p class="chart-note">Models with no measured speed, latency or price (reported as 0 by the API) are left out of those charts and shown as – in the table. Bar charts show at most 30 models.</p>
+
 <script type="application/json" id="chart-data">{{ chart_json | safe }}</script>
 
-<table class="sortable" id="leaderboard">
-  <thead><tr>
-    <th data-type="text">Model</th><th data-type="text">Creator</th>
-    <th data-type="num">Intelligence Index</th><th data-type="num">Coding Index</th><th data-type="num">Math Index</th>
-    <th data-type="num">Blended $/1M</th><th data-type="num">Input $/1M</th><th data-type="num">Output $/1M</th>
-    <th data-type="num">Output tok/s</th><th data-type="num">TTFT (s)</th>
-  </tr></thead>
-  <tbody>
-  {% for m in models %}
-    <tr data-creator="{{ m.creator_name or '' }}">
-      <td data-v="{{ m.name or m.model_id }}"><a href="/model/{{ m.model_id }}">{{ m.name or m.model_id }}</a></td>
-      <td data-v="{{ m.creator_name or '' }}">{{ m.creator_name or '–' }}</td>
-      <td data-v="{{ m.intelligence_index if m.intelligence_index is not none else '' }}">{{ m.intelligence_index | fmt }}</td>
-      <td data-v="{{ m.coding_index if m.coding_index is not none else '' }}">{{ m.coding_index | fmt }}</td>
-      <td data-v="{{ m.math_index if m.math_index is not none else '' }}">{{ m.math_index | fmt }}</td>
-      <td data-v="{{ m.price_blended if m.price_blended is not none else '' }}">{{ m.price_blended | fmt(2) }}</td>
-      <td data-v="{{ m.price_input if m.price_input is not none else '' }}">{{ m.price_input | fmt(2) }}</td>
-      <td data-v="{{ m.price_output if m.price_output is not none else '' }}">{{ m.price_output | fmt(2) }}</td>
-      <td data-v="{{ m.output_tps if m.output_tps is not none else '' }}">{{ m.output_tps | fmt }}</td>
-      <td data-v="{{ m.ttft_s if m.ttft_s is not none else '' }}">{{ m.ttft_s | fmt(2) }}</td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
+<section style="margin-top:24px">
+  <div class="card-head" style="margin-bottom:10px"><h2>Models</h2><span class="muted" data-shown></span></div>
+  <div class="table-wrap">
+  <table class="sortable" id="leaderboard">
+    <thead><tr>
+      <th data-type="num" class="n">#</th>
+      <th data-type="text">Model</th><th data-type="text">Creator</th><th data-type="text">Released</th>
+      <th data-type="num" class="n">Intelligence</th><th data-type="num" class="n">Coding</th><th data-type="num" class="n">Math</th>
+      <th data-type="num" class="n">Blended $/1M</th><th data-type="num" class="n">Input $/1M</th><th data-type="num" class="n">Output $/1M</th>
+      <th data-type="num" class="n">Output tok/s</th><th data-type="num" class="n">First answer (s)</th>
+    </tr></thead>
+    <tbody>
+    {% for m in models %}
+      {% set lat = m.ttfa_s or m.ttft_s %}
+      <tr data-id="{{ m.model_id }}" data-creator="{{ m.creator_name or '' }}">
+        <td class="n rank" data-v="{{ loop.index if m.intelligence_index is not none else '' }}">{{ loop.index if m.intelligence_index is not none else '' }}</td>
+        <td class="model" data-v="{{ m.name or m.model_id }}"><span class="swatch" data-swatch="{{ m.creator_name or '' }}"></span><a href="/model/{{ m.model_id }}">{{ m.name or m.model_id }}</a></td>
+        <td data-v="{{ m.creator_name or '' }}">{{ m.creator_name or '–' }}</td>
+        <td data-v="{{ m.release_date or '' }}">{{ m.release_date or '–' }}</td>
+        <td class="n" data-v="{{ m.intelligence_index if m.intelligence_index is not none else '' }}"><span class="cell-bar">{% if m.intelligence_index is not none %}<i style="width:{{ (m.intelligence_index * 0.8) | round(1) }}px"></i>{% endif %}{{ m.intelligence_index | fmt }}</span></td>
+        <td class="n" data-v="{{ m.coding_index if m.coding_index is not none else '' }}">{{ m.coding_index | fmt }}</td>
+        <td class="n" data-v="{{ m.math_index if m.math_index is not none else '' }}">{{ m.math_index | fmt }}</td>
+        <td class="n" data-v="{{ m.price_blended or '' }}">{{ m.price_blended | money }}</td>
+        <td class="n" data-v="{{ m.price_input or '' }}">{{ m.price_input | money }}</td>
+        <td class="n" data-v="{{ m.price_output or '' }}">{{ m.price_output | money }}</td>
+        <td class="n" data-v="{{ m.output_tps or '' }}">{{ m.output_tps | fmt if m.output_tps else '–' }}</td>
+        <td class="n" data-v="{{ lat or '' }}">{{ lat | fmt(2) if lat else '–' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
 {% endif %}
 {% endblock %}

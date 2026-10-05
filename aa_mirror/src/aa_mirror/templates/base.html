@@ -5,48 +5,52 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>{% block title %}{{ app_name }}{% endblock %}</title>
+<script>try { var t = localStorage.getItem("aa-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="{{ url_for('static', path='app.js') }}" defer></script>
 </head>
 <body>
-<header>
-  <div class="brand">{{ app_name }}</div>
-  <nav>
-    <a href="/">LLM leaderboard</a>
-    <a href="/compare">Compare snapshots</a>
-    {% for c in media_categories %}<a href="/media/{{ c }}">{{ c }}</a>{% endfor %}
-    <a href="/runs">Runs</a>
-  </nav>
-</header>
-
-<section class="status" id="status"
-  data-running="{{ status.running_run_id or '' }}">
-  <div>
-    <strong>Last refreshed:</strong>
-    <span id="last-refreshed">{{ status.last_refreshed_at or 'never' }}</span> (UTC)
-  </div>
-  <div>
-    <strong>Last run:</strong>
+{% set path = request.url.path %}
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/"><span class="brand-mark"></span>{{ app_name }}</a>
+    <nav class="nav">
+      <a href="/" class="{{ 'active' if path == '/' or path.startswith('/model') }}">Models</a>
+      <details class="{{ 'active' if path.startswith('/media') }}">
+        <summary>Media ▾</summary>
+        <div class="menu">{% for c in media_categories %}<a href="/media/{{ c }}">{{ c | replace('-', ' ') }}</a>{% endfor %}</div>
+      </details>
+      <a href="/compare" class="{{ 'active' if path.startswith('/compare') }}">Compare snapshots</a>
+      <a href="/runs" class="{{ 'active' if path.startswith('/runs') }}">Runs</a>
+    </nav>
     {% set lr = status.last_run %}
-    <span id="last-run">{% if lr %}#{{ lr.id }} {{ lr.status }} ({{ lr.trigger }}, {{ lr.started_at }}){% if lr.message %} – {{ lr.message }}{% endif %}{% else %}none{% endif %}</span>
+    <div class="status" id="status" data-running="{{ status.running_run_id or '' }}">
+      <span title="{% if lr %}Run #{{ lr.id }} {{ lr.status }} ({{ lr.trigger }}){% if lr.message %}: {{ lr.message }}{% endif %}{% endif %}">
+        <i class="dot {{ lr.status if lr else 'failed' }}"></i>Updated
+        <time id="last-refreshed" data-utc="{{ status.last_refreshed_at or '' }}">{{ status.last_refreshed_at or 'never' }}</time>
+      </span>
+      <span class="num" title="API requests in the last 24h / self-imposed budget">
+        <span id="req-count">{{ status.requests_last_24h }}</span>/{{ status.daily_request_budget }} req
+        {% if status.cooldown_remaining_s %}· cooldown {{ (status.cooldown_remaining_s / 60) | round(0, 'ceil') | int }}m{% endif %}
+      </span>
+      <span id="refresh-msg"></span>
+      <button id="refresh-btn" class="btn primary" type="button">Refresh now</button>
+      <button id="theme-btn" class="btn icon-btn" type="button" title="Toggle theme" aria-label="Toggle theme">◐</button>
+    </div>
   </div>
-  <div class="muted">
-    API requests last 24h: <span id="req-count">{{ status.requests_last_24h }}</span>/{{ status.daily_request_budget }}
-    {% if status.cooldown_remaining_s %}· cooldown {{ status.cooldown_remaining_s }}s{% endif %}
-  </div>
-  <button id="refresh-btn" type="button">Refresh now</button>
-  <span id="refresh-msg" class="muted"></span>
-</section>
+</header>
 
 <main>
 {% block content %}{% endblock %}
 </main>
 
-<footer>
+<footer><div>
   Source: <a href="https://artificialanalysis.ai/" rel="noopener">Artificial Analysis (artificialanalysis.ai)</a>.
   Private internal study copy for personal analysis only; not affiliated with or endorsed by Artificial Analysis.
   Not for redistribution. Scores shown with their snapshot date.
-</footer>
+</div></footer>
 </body>
 </html>

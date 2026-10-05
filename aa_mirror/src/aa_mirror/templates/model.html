@@ -1,34 +1,60 @@
 {% extends "base.html" %}
 {% block title %}{{ m.name or m.model_id }} · {{ app_name }}{% endblock %}
 {% block content %}
-<h1>{{ m.name or m.model_id }}</h1>
-<p class="muted">Creator: {{ m.creator_name or '–' }} · id <code>{{ m.model_id }}</code>{% if m.release_date %} · released {{ m.release_date }}{% endif %}
-  · latest snapshot #{{ m.run_id }} ({{ m.started_at }} UTC){% if m.slug %} · <a href="https://artificialanalysis.ai/models/{{ m.slug }}" rel="noopener">view on Artificial Analysis</a>{% endif %}</p>
-
-<div class="cards">
-  <div><span>Intelligence Index</span><b>{{ m.intelligence_index | fmt }}</b></div>
-  <div><span>Coding Index</span><b>{{ m.coding_index | fmt }}</b></div>
-  <div><span>Math Index</span><b>{{ m.math_index | fmt }}</b></div>
-  <div><span>Blended $/1M (3:1)</span><b>{{ m.price_blended | fmt(2) }}</b></div>
-  <div><span>Input / Output $/1M</span><b>{{ m.price_input | fmt(2) }} / {{ m.price_output | fmt(2) }}</b></div>
-  <div><span>Output tok/s</span><b>{{ m.output_tps | fmt }}</b></div>
-  <div><span>TTFT / first answer (s)</span><b>{{ m.ttft_s | fmt(2) }} / {{ m.ttfa_s | fmt(2) }}</b></div>
+{% set lat = m.ttfa_s or m.ttft_s %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow"><a href="/">← LLM Leaderboard</a></div>
+    <h1><span class="swatch" data-swatch="{{ m.creator_name or '' }}" style="width:14px;height:14px;margin-right:10px"></span>{{ m.name or m.model_id }}</h1>
+    <p>{{ m.creator_name or 'Unknown creator' }}{% if m.release_date %} · released {{ m.release_date }}{% endif %}
+      · latest snapshot #{{ m.run_id }}, <time data-utc="{{ m.started_at }}">{{ m.started_at }}</time>
+      {% if m.slug %} · <a href="https://artificialanalysis.ai/models/{{ m.slug }}" rel="noopener">view on Artificial Analysis ↗</a>{% endif %}</p>
+  </div>
 </div>
 
-<h2>Evaluations (latest snapshot)</h2>
-<table class="sortable">
-  <thead><tr><th data-type="text">Metric</th><th data-type="num">Value</th></tr></thead>
-  <tbody>{% for k, v in m.evaluations | dictsort %}<tr><td data-v="{{ k }}">{{ k }}</td><td data-v="{{ v if v is not none else '' }}">{{ v | fmt(3) }}</td></tr>{% endfor %}</tbody>
-</table>
+<div class="stats">
+  <div class="stat"><span>Intelligence Index</span><b>{{ m.intelligence_index | fmt }}</b></div>
+  <div class="stat"><span>Coding Index</span><b>{{ m.coding_index | fmt }}</b></div>
+  <div class="stat"><span>Math Index</span><b>{{ m.math_index | fmt }}</b></div>
+  <div class="stat"><span>Blended price (3:1)</span><b>{{ m.price_blended | money }}</b> <small>/ 1M tokens</small></div>
+  <div class="stat"><span>Input / output price</span><b>{{ m.price_input | money }}</b> <small>/ {{ m.price_output | money }}</small></div>
+  <div class="stat"><span>Output speed</span><b>{{ m.output_tps | fmt(0) if m.output_tps else '–' }}</b> <small>tok/s</small></div>
+  <div class="stat"><span>Time to first answer</span><b>{{ lat | fmt(2) if lat else '–' }}</b> <small>s</small></div>
+</div>
 
-<h2>Over time</h2>
-<div class="charts">
-  <figure><figcaption>Intelligence Index</figcaption><canvas id="hist-iq"></canvas></figure>
-  <figure><figcaption>Blended price and output speed</figcaption><canvas id="hist-price-speed"></canvas></figure>
+<div class="grid grid-2">
+  <section class="card">
+    <div class="card-head"><h2>Evaluations</h2></div>
+    <p class="card-sub">Latest snapshot. Scores reported as fractions are shown as percentages.</p>
+    <div class="chart-box"><canvas id="chart-evals"></canvas></div>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Over time</h2><span class="muted">{{ history | length }} snapshot{{ 's' if history | length != 1 }}</span></div>
+    <p class="card-sub">History builds up with each refresh.</p>
+    <div class="chart-box" style="height:200px"><canvas id="hist-iq"></canvas></div>
+    <div class="chart-box" style="height:200px;margin-top:16px"><canvas id="hist-price-speed"></canvas></div>
+  </section>
 </div>
 <script type="application/json" id="series-data">{{ series_json | safe }}</script>
-<table>
-  <thead><tr><th>Snapshot</th><th>Taken (UTC)</th><th>Intelligence</th><th>Blended $/1M</th><th>Output tok/s</th><th>TTFT (s)</th></tr></thead>
-  <tbody>{% for h in history | reverse %}<tr><td>#{{ h.run_id }}</td><td>{{ h.started_at }}</td><td>{{ h.intelligence_index | fmt }}</td><td>{{ h.price_blended | fmt(2) }}</td><td>{{ h.output_tps | fmt }}</td><td>{{ h.ttft_s | fmt(2) }}</td></tr>{% endfor %}</tbody>
-</table>
+<script type="application/json" id="eval-data">{{ eval_json | safe }}</script>
+
+<section>
+  <div class="card-head" style="margin-bottom:10px"><h2>Raw evaluation values</h2></div>
+  <div class="table-wrap" style="max-height:none">
+  <table class="sortable">
+    <thead><tr><th data-type="text">Metric</th><th data-type="num" class="n">Value</th></tr></thead>
+    <tbody>{% for k, v in m.evaluations | dictsort %}<tr><td data-v="{{ k }}">{{ k }}</td><td class="n" data-v="{{ v if v is not none else '' }}">{{ v | fmt(3) }}</td></tr>{% endfor %}</tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <div class="card-head" style="margin-bottom:10px"><h2>Snapshots</h2></div>
+  <div class="table-wrap" style="max-height:none">
+  <table>
+    <thead><tr><th>Snapshot</th><th>Taken</th><th class="n">Intelligence</th><th class="n">Blended $/1M</th><th class="n">Output tok/s</th><th class="n">First answer (s)</th></tr></thead>
+    <tbody>{% for h in history | reverse %}{% set hl = h.ttfa_s or h.ttft_s %}<tr><td>#{{ h.run_id }}</td><td><time data-utc="{{ h.started_at }}">{{ h.started_at }}</time></td><td class="n">{{ h.intelligence_index | fmt }}</td><td class="n">{{ h.price_blended | money }}</td><td class="n">{{ h.output_tps | fmt if h.output_tps else '–' }}</td><td class="n">{{ hl | fmt(2) if hl else '–' }}</td></tr>{% endfor %}</tbody>
+  </table>
+  </div>
+</section>
 {% endblock %}
