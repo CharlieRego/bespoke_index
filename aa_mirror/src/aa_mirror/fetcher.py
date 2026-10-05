@@ -121,8 +121,10 @@ def fetch_json(client: httpx.Client, endpoint: Endpoint) -> tuple[int, bytes, An
         resp = client.get(endpoint.path)
     except httpx.HTTPError as e:
         raise FetchError(f"{endpoint.key}: network error ({type(e).__name__})") from None
-    if resp.status_code in (401, 403):
-        raise FetchError(f"{endpoint.key}: HTTP {resp.status_code} (check API key)", resp.status_code, fatal=True)
+    if resp.status_code == 401:
+        raise FetchError(f"{endpoint.key}: HTTP 401 (check API key)", 401, fatal=True)
+    if resp.status_code == 403:
+        raise FetchError(f"{endpoint.key}: HTTP 403 (not available on this tier?)", 403)
     if resp.status_code == 429:
         raise FetchError(f"{endpoint.key}: HTTP 429 rate limited", 429, fatal=True)
     if resp.status_code != 200:

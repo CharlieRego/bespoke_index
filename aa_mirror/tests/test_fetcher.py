@@ -78,7 +78,7 @@ def test_fetch_sends_key_header():
     assert status == 200 and payload == {"data": []}
 
 
-@pytest.mark.parametrize("code,fatal", [(401, True), (403, True), (429, True), (500, False)])
+@pytest.mark.parametrize("code,fatal", [(401, True), (403, False), (429, True), (500, False)])
 def test_fetch_http_errors(code, fatal):
     with _client(lambda req: httpx.Response(code, text="nope")) as c:
         with pytest.raises(FetchError) as ei:
