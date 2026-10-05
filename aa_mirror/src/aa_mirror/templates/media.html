@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ category }} leaderboard</h1>
+{% if not run %}
+  <p>No {{ category }} data in any snapshot yet.</p>
+{% else %}
+<p class="muted">Snapshot #{{ run.id }} taken {{ run.started_at }} UTC · {{ rows | length }} models. Source: Artificial Analysis (artificialanalysis.ai).</p>
+<form class="controls" onsubmit="return false"><label>Filter <input type="search" id="filter-text" placeholder="model or creator"></label><span class="muted" id="row-count"></span></form>
+<table class="sortable" id="leaderboard">
+  <thead><tr><th data-type="num">Rank</th><th data-type="text">Model</th><th data-type="text">Creator</th><th data-type="num">ELO</th><th data-type="text">95% CI</th><th data-type="num">Appearances</th><th data-type="text">Released</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr data-creator="{{ r.creator_name or '' }}">
+      <td data-v="{{ r.rank if r.rank is not none else '' }}">{{ r.rank | fmt }}</td>
+      <td data-v="{{ r.name or r.model_id }}">{{ r.name or r.model_id }}</td>
+      <td data-v="{{ r.creator_name or '' }}">{{ r.creator_name or '–' }}</td>
+      <td data-v="{{ r.elo if r.elo is not none else '' }}">{{ r.elo | fmt(0) }}</td>
+      <td data-v="{{ r.ci95 or '' }}">{{ r.ci95 or '–' }}</td>
+      <td data-v="{{ r.appearances if r.appearances is not none else '' }}">{{ r.appearances | fmt }}</td>
+      <td data-v="{{ r.release_date or '' }}">{{ r.release_date or '–' }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

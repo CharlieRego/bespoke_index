@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Refresh runs</h1>
+<table>
+  <thead><tr><th>#</th><th>Trigger</th><th>Status</th><th>Started (UTC)</th><th>Finished (UTC)</th><th>Requests</th><th>Message</th></tr></thead>
+  <tbody>
+  {% for r in runs %}
+    <tr class="run-{{ r.status }}"><td>{{ r.id }}</td><td>{{ r.trigger }}</td><td>{{ r.status }}</td><td>{{ r.started_at }}</td><td>{{ r.finished_at or '–' }}</td><td>{{ r.requests_made }}</td><td>{{ r.message or '' }}</td></tr>
+  {% else %}
+    <tr><td colspan="7" class="muted">No runs yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

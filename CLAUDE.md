@@ -5,7 +5,14 @@ Single source of truth for all AI coding agents working in this repo (Claude Cod
 ## Project
 
 `bespoke_index` — Bespoke AI Model Indices. Part of a data science portfolio.
-The repo is early-stage (README, LICENSE, .gitignore only); update this file as structure emerges.
+Early-stage; update this file as structure emerges.
+
+## Layout
+
+- `aa_mirror/` — AA Study Mirror (private): fetcher + FastAPI UI over the Artificial Analysis free Data API. Own `pyproject.toml`/`uv.lock`. Code in `src/aa_mirror/`, tests in `tests/` (synthetic fixtures only), systemd/Caddy files in `deploy/`.
+  - Snapshots go to SQLite at `$AA_DATA_DIR/aa_mirror.sqlite3` (default `aa_mirror/data/`, gitignored; `/var/lib/aa-mirror` on the VPS).
+  - Internal-only: bind to localhost, reach via SSH tunnel or Caddy basic_auth. No public deploy, exports or raw-payload endpoints.
+  - All fetches go through `jobs.acquire_run` (SQLite lock + cooldown + 24h request budget); don't add code paths that call the API around it.
 
 ## Architecture
 
@@ -33,6 +40,17 @@ The repo is early-stage (README, LICENSE, .gitignore only); update this file as 
 - Maintain `terms-conditions.md` as the register of attribution, license, and usage rules for every external data source or information provider.
 - When adding or changing a provider (API, scrape, licensed feed, brand assets), update that file **before** shipping charts or public citations: allowed uses, attribution text/logo rules, and hard prohibitions.
 - Summaries in `terms-conditions.md` do not replace the provider’s legal documents; link the primary Terms / Data Platform / brand kit and record a last-reviewed date.
+
+## Commands
+
+Run from `aa_mirror/`:
+
+- `uv sync` — install deps
+- `uv run pytest` — tests (no network)
+- `uv run aa-mirror smoke` — live API check, 1 request, stores nothing
+- `uv run aa-mirror refresh [--dry-run]` — fetch one snapshot (6 requests)
+- `uv run aa-mirror status`
+- `uv run aa-mirror serve [--port 8765]` — UI on 127.0.0.1
 
 ## Maintaining this file
 

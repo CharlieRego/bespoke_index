@@ -1,0 +1,18 @@
+# Option A (preferred): no Caddy at all. The app binds to 127.0.0.1:8765; reach it with
+#   ssh -L 8765:127.0.0.1:8765 onidel   then open http://localhost:8765
+#
+# Option B: private subdomain behind basic auth. Generate the hash with
+#   caddy hash-password
+# and keep it out of git (e.g. import from /etc/caddy/aa-mirror.caddy).
+# Never expose this site without auth: the data is licensed for internal use only.
+
+aa-mirror.<domain> {
+	basic_auth {
+		<user> <bcrypt-hash-from-caddy-hash-password>
+	}
+	header {
+		X-Robots-Tag "noindex, nofollow"
+		-Server
+	}
+	reverse_proxy 127.0.0.1:8765
+}

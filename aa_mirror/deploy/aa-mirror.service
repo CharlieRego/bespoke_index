@@ -1,0 +1,25 @@
+[Unit]
+Description=AA Study Mirror (private) web UI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=aa-mirror
+Group=aa-mirror
+WorkingDirectory=/srv/aa-mirror
+EnvironmentFile=/etc/aa-mirror/aa-mirror.env
+Environment=AA_DATA_DIR=/var/lib/aa-mirror
+StateDirectory=aa-mirror
+ExecStart=/srv/aa-mirror/.venv/bin/aa-mirror serve --host 127.0.0.1 --port 8765
+Restart=on-failure
+RestartSec=5
+MemoryMax=300M
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/aa-mirror
+
+[Install]
+WantedBy=multi-user.target

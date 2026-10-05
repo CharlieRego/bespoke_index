@@ -107,4 +107,5 @@ Website Terms of Use govern access to `artificialanalysis.ai` (accounts, accepta
 - Do not expose raw AA API payloads, bulk dumps, or machine-readable mirrors of their dataset.
 - Do not market this product as “verified/certified by Artificial Analysis” or use their mark as a partner badge.
 - Prefer stable `id` fields from the API over changing `name` / `slug` values.
+- `aa_mirror/` (AA Study Mirror) is an **internal-only** study copy: it stores raw payloads and per-snapshot tables locally, so it must stay behind localhost/SSH tunnel or auth, with no public deployment, export/download features, or JSON data endpoints. Fetched data is gitignored; test fixtures are synthetic. It does not use AA logos as its own identity.
 - Re-review this section if the project moves from Free to Pro/Commercial or starts shipping AA-derived data in downloadable/tabular form.

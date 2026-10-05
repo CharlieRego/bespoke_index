@@ -1,0 +1,20 @@
+[Unit]
+Description=AA Study Mirror (private) scheduled refresh
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=aa-mirror
+Group=aa-mirror
+WorkingDirectory=/srv/aa-mirror
+EnvironmentFile=/etc/aa-mirror/aa-mirror.env
+Environment=AA_DATA_DIR=/var/lib/aa-mirror
+StateDirectory=aa-mirror
+ExecStart=/srv/aa-mirror/.venv/bin/aa-mirror refresh --trigger timer
+TimeoutStartSec=300
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/aa-mirror

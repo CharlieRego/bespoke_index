@@ -216,3 +216,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# AA Study Mirror: fetched Artificial Analysis data is never committed
+data/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm

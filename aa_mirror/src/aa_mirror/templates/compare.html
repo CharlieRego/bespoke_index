@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Compare snapshots</h1>
+{% if snaps | length < 2 %}
+  <p>Need at least two LLM snapshots to compare. History accumulates with each refresh.</p>
+{% else %}
+<form class="controls" method="get">
+  <label>From (A) <select name="a">{% for s in snaps %}<option value="{{ s.id }}" {% if s.id == a %}selected{% endif %}>#{{ s.id }} · {{ s.started_at }}</option>{% endfor %}</select></label>
+  <label>To (B) <select name="b">{% for s in snaps %}<option value="{{ s.id }}" {% if s.id == b %}selected{% endif %}>#{{ s.id }} · {{ s.started_at }}</option>{% endfor %}</select></label>
+  <button type="submit">Compare</button>
+</form>
+{% if result %}
+<p class="muted">#{{ a }} ({{ snap_a.started_at }}) → #{{ b }} ({{ snap_b.started_at }}): {{ result.added | length }} added, {{ result.removed | length }} removed, {{ result.changed | length }} changed, {{ result.unchanged }} unchanged.</p>
+
+<h2>Changed</h2>
+{% if result.changed %}
+<table class="sortable">
+  <thead><tr><th data-type="text">Model</th><th data-type="text">Creator</th><th data-type="text">Metric</th><th data-type="num">A</th><th data-type="num">B</th><th data-type="num">Δ</th></tr></thead>
+  <tbody>
+  {% for c in result.changed %}{% for f, d in c.deltas.items() %}
+    <tr><td data-v="{{ c.name }}"><a href="/model/{{ c.model_id }}">{{ c.name }}</a></td><td data-v="{{ c.creator_name or '' }}">{{ c.creator_name or '–' }}</td><td data-v="{{ f }}">{{ f }}</td>
+      <td data-v="{{ d[0] if d[0] is not none else '' }}">{{ d[0] | fmt(2) }}</td><td data-v="{{ d[1] if d[1] is not none else '' }}">{{ d[1] | fmt(2) }}</td>
+      <td data-v="{{ d[2] if d[2] is not none else '' }}" class="{{ 'up' if d[2] and d[2] > 0 else ('down' if d[2] and d[2] < 0 else '') }}">{{ d[2] | fmt(2) }}</td></tr>
+  {% endfor %}{% endfor %}
+  </tbody>
+</table>
+{% else %}<p>No metric changes.</p>{% endif %}
+
+<div class="two-col">
+  <div><h2>Added in B</h2><ul>{% for m in result.added %}<li><a href="/model/{{ m.model_id }}">{{ m.name }}</a> <span class="muted">{{ m.creator_name or '' }}</span></li>{% else %}<li class="muted">none</li>{% endfor %}</ul></div>
+  <div><h2>Removed in B</h2><ul>{% for m in result.removed %}<li><a href="/model/{{ m.model_id }}">{{ m.name }}</a> <span class="muted">{{ m.creator_name or '' }}</span></li>{% else %}<li class="muted">none</li>{% endfor %}</ul></div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,23 @@
+{
+  "status": 200,
+  "data": [
+    {
+      "id": "m0000000-0000-4000-8000-000000000001",
+      "name": "Synthetic Painter",
+      "slug": "synthetic-painter",
+      "model_creator": {"id": "c0000000-0000-4000-8000-000000000001", "name": "Fixture Labs"},
+      "elo": 1101.7,
+      "rank": 1,
+      "ci95": "-5/+6",
+      "appearances": 4321,
+      "release_date": "2026-01-15"
+    },
+    {
+      "id": "m0000000-0000-4000-8000-000000000002",
+      "name": "Synthetic Sketcher",
+      "model_creator": {"id": "c0000000-0000-4000-8000-000000000002", "name": "Placeholder AI"},
+      "elo": 1003,
+      "rank": 2
+    }
+  ]
+}

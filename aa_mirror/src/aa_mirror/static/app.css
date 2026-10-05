@@ -1,0 +1,36 @@
+:root { --fg: #1f2937; --muted: #6b7280; --line: #e5e7eb; --bg: #ffffff; --accent: #2563eb; --panel: #f9fafb; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg: #e5e7eb; --muted: #9ca3af; --line: #374151; --bg: #111827; --accent: #60a5fa; --panel: #1f2937; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; color: var(--fg); background: var(--bg); }
+a { color: var(--accent); }
+header { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.brand { font-weight: 600; }
+nav { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+nav a { text-decoration: none; }
+.status { display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: center; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+main { padding: 8px 16px 24px; max-width: 1400px; }
+footer { padding: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+.muted { color: var(--muted); }
+button { font: inherit; padding: 4px 12px; cursor: pointer; }
+button:disabled { cursor: progress; opacity: 0.6; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 8px 0 12px; }
+table { border-collapse: collapse; width: 100%; margin: 8px 0 16px; display: block; overflow-x: auto; }
+th, td { padding: 4px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+td[data-v] { font-variant-numeric: tabular-nums; }
+table.sortable th { cursor: pointer; user-select: none; }
+th[data-dir="asc"]::after { content: " ▲"; }
+th[data-dir="desc"]::after { content: " ▼"; }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+figure { margin: 0; padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
+figcaption { font-weight: 600; margin-bottom: 6px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 12px 0; }
+.cards div { padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+.cards span { display: block; color: var(--muted); font-size: 12px; }
+.cards b { font-size: 18px; }
+.two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.up { color: #059669; }
+.down { color: #dc2626; }
+.run-failed td { color: #dc2626; }
+.run-partial td { color: #b45309; }

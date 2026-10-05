@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>LLM leaderboard</h1>
+{% if not snap %}
+  <p>No snapshots yet. Click <em>Refresh now</em> or run <code>uv run aa-mirror refresh</code>.</p>
+{% else %}
+<form class="controls" method="get">
+  <label>Snapshot
+    <select name="run" onchange="this.form.submit()">
+      {% for s in snaps %}<option value="{{ s.id }}" {% if s.id == snap.id %}selected{% endif %}>#{{ s.id }} · {{ s.started_at }} · {{ s.n }} models</option>{% endfor %}
+    </select>
+  </label>
+  <label>Filter <input type="search" id="filter-text" placeholder="model or creator"></label>
+  <label>Creator
+    <select id="filter-creator"><option value="">all</option>{% for c in creators %}<option>{{ c }}</option>{% endfor %}</select>
+  </label>
+  <label><input type="checkbox" id="filter-indexed"> only with Intelligence Index</label>
+  <span class="muted" id="row-count"></span>
+</form>
+
+<div class="charts">
+  <figure><figcaption>Intelligence Index vs blended price (USD / 1M tokens, log scale)</figcaption><canvas id="chart-price"></canvas></figure>
+  <figure><figcaption>Top 25 by median output speed (tokens/s)</figcaption><canvas id="chart-speed"></canvas></figure>
+  <figure><figcaption>Intelligence Index vs median output speed</figcaption><canvas id="chart-iq-speed"></canvas></figure>
+</div>
+<p class="muted">Snapshot #{{ snap.id }} taken {{ snap.started_at }} UTC. Source: Artificial Analysis (artificialanalysis.ai).</p>
+<script type="application/json" id="chart-data">{{ chart_json | safe }}</script>
+
+<table class="sortable" id="leaderboard">
+  <thead><tr>
+    <th data-type="text">Model</th><th data-type="text">Creator</th>
+    <th data-type="num">Intelligence Index</th><th data-type="num">Coding Index</th><th data-type="num">Math Index</th>
+    <th data-type="num">Blended $/1M</th><th data-type="num">Input $/1M</th><th data-type="num">Output $/1M</th>
+    <th data-type="num">Output tok/s</th><th data-type="num">TTFT (s)</th>
+  </tr></thead>
+  <tbody>
+  {% for m in models %}
+    <tr data-creator="{{ m.creator_name or '' }}">
+      <td data-v="{{ m.name or m.model_id }}"><a href="/model/{{ m.model_id }}">{{ m.name or m.model_id }}</a></td>
+      <td data-v="{{ m.creator_name or '' }}">{{ m.creator_name or '–' }}</td>
+      <td data-v="{{ m.intelligence_index if m.intelligence_index is not none else '' }}">{{ m.intelligence_index | fmt }}</td>
+      <td data-v="{{ m.coding_index if m.coding_index is not none else '' }}">{{ m.coding_index | fmt }}</td>
+      <td data-v="{{ m.math_index if m.math_index is not none else '' }}">{{ m.math_index | fmt }}</td>
+      <td data-v="{{ m.price_blended if m.price_blended is not none else '' }}">{{ m.price_blended | fmt(2) }}</td>
+      <td data-v="{{ m.price_input if m.price_input is not none else '' }}">{{ m.price_input | fmt(2) }}</td>
+      <td data-v="{{ m.price_output if m.price_output is not none else '' }}">{{ m.price_output | fmt(2) }}</td>
+      <td data-v="{{ m.output_tps if m.output_tps is not none else '' }}">{{ m.output_tps | fmt }}</td>
+      <td data-v="{{ m.ttft_s if m.ttft_s is not none else '' }}">{{ m.ttft_s | fmt(2) }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

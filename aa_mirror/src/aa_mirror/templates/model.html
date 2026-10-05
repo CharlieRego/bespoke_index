@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ m.name or m.model_id }} · {{ app_name }}{% endblock %}
+{% block content %}
+<h1>{{ m.name or m.model_id }}</h1>
+<p class="muted">Creator: {{ m.creator_name or '–' }} · id <code>{{ m.model_id }}</code>{% if m.release_date %} · released {{ m.release_date }}{% endif %}
+  · latest snapshot #{{ m.run_id }} ({{ m.started_at }} UTC){% if m.slug %} · <a href="https://artificialanalysis.ai/models/{{ m.slug }}" rel="noopener">view on Artificial Analysis</a>{% endif %}</p>
+
+<div class="cards">
+  <div><span>Intelligence Index</span><b>{{ m.intelligence_index | fmt }}</b></div>
+  <div><span>Coding Index</span><b>{{ m.coding_index | fmt }}</b></div>
+  <div><span>Math Index</span><b>{{ m.math_index | fmt }}</b></div>
+  <div><span>Blended $/1M (3:1)</span><b>{{ m.price_blended | fmt(2) }}</b></div>
+  <div><span>Input / Output $/1M</span><b>{{ m.price_input | fmt(2) }} / {{ m.price_output | fmt(2) }}</b></div>
+  <div><span>Output tok/s</span><b>{{ m.output_tps | fmt }}</b></div>
+  <div><span>TTFT / first answer (s)</span><b>{{ m.ttft_s | fmt(2) }} / {{ m.ttfa_s | fmt(2) }}</b></div>
+</div>
+
+<h2>Evaluations (latest snapshot)</h2>
+<table class="sortable">
+  <thead><tr><th data-type="text">Metric</th><th data-type="num">Value</th></tr></thead>
+  <tbody>{% for k, v in m.evaluations | dictsort %}<tr><td data-v="{{ k }}">{{ k }}</td><td data-v="{{ v if v is not none else '' }}">{{ v | fmt(3) }}</td></tr>{% endfor %}</tbody>
+</table>
+
+<h2>Over time</h2>
+<div class="charts">
+  <figure><figcaption>Intelligence Index</figcaption><canvas id="hist-iq"></canvas></figure>
+  <figure><figcaption>Blended price and output speed</figcaption><canvas id="hist-price-speed"></canvas></figure>
+</div>
+<script type="application/json" id="series-data">{{ series_json | safe }}</script>
+<table>
+  <thead><tr><th>Snapshot</th><th>Taken (UTC)</th><th>Intelligence</th><th>Blended $/1M</th><th>Output tok/s</th><th>TTFT (s)</th></tr></thead>
+  <tbody>{% for h in history | reverse %}<tr><td>#{{ h.run_id }}</td><td>{{ h.started_at }}</td><td>{{ h.intelligence_index | fmt }}</td><td>{{ h.price_blended | fmt(2) }}</td><td>{{ h.output_tps | fmt }}</td><td>{{ h.ttft_s | fmt(2) }}</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

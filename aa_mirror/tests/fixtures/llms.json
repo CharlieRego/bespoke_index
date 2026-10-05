@@ -1,0 +1,40 @@
+{
+  "status": 200,
+  "prompt_options": {"parallel_queries": 1, "prompt_length": "medium"},
+  "data": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "name": "Synthetic Alpha <b>",
+      "slug": "synthetic-alpha",
+      "model_creator": {"id": "c0000000-0000-4000-8000-000000000001", "name": "Fixture Labs", "slug": "fixture-labs"},
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 61.5,
+        "artificial_analysis_coding_index": 55.0,
+        "artificial_analysis_math_index": 70.25,
+        "mmlu_pro": 0.81,
+        "gpqa": 0.62,
+        "hle": null
+      },
+      "pricing": {"price_1m_blended_3_to_1": 3.5, "price_1m_input_tokens": 2.0, "price_1m_output_tokens": 8.0},
+      "median_output_tokens_per_second": 120.4,
+      "median_time_to_first_token_seconds": 0.45,
+      "median_time_to_first_answer_token": 2.1
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "name": "Synthetic Beta",
+      "slug": "synthetic-beta",
+      "model_creator": {"id": "c0000000-0000-4000-8000-000000000002", "name": "Placeholder AI"},
+      "evaluations": {"artificial_analysis_intelligence_index": null, "mmlu_pro": "n/a"},
+      "pricing": {"price_1m_blended_3_to_1": 0, "price_1m_input_tokens": 0, "price_1m_output_tokens": 0},
+      "median_output_tokens_per_second": 0,
+      "median_time_to_first_token_seconds": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000003",
+      "name": "Synthetic Gamma",
+      "slug": "synthetic-gamma"
+    },
+    {"name": "row without id is skipped"}
+  ]
+}

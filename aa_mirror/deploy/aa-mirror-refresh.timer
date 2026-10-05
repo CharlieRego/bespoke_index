@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily AA Study Mirror refresh
+
+[Timer]
+OnCalendar=*-*-* 06:30:00 Australia/Sydney
+RandomizedDelaySec=20m
+Persistent=true
+
+[Install]
+WantedBy=timers.target
